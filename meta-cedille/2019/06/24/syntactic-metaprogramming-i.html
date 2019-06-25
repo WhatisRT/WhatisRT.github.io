@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Syntactic metaprogramming I | Meta-cedille blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Syntactic metaprogramming I" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This is the first in a series of posts where I will explain how to use the metaprogramming features of meta-cedille. Before we start discussing any specifics, I want to give a little background on the system. Meta-cedille is of course based on cedille, a minimalistic, dependently typed programming language without a datatype system. I won’t explain why cedille is an interesting theory here, but you can for example read this post by Victor Maia, or have a look at the cedille documentation. The main reason why cedille was chosen as a host language for this metaprogramming system was because of its simple implementation and consistency proof, but this is not its only advantage over other type theories." />
+<meta property="og:description" content="This is the first in a series of posts where I will explain how to use the metaprogramming features of meta-cedille. Before we start discussing any specifics, I want to give a little background on the system. Meta-cedille is of course based on cedille, a minimalistic, dependently typed programming language without a datatype system. I won’t explain why cedille is an interesting theory here, but you can for example read this post by Victor Maia, or have a look at the cedille documentation. The main reason why cedille was chosen as a host language for this metaprogramming system was because of its simple implementation and consistency proof, but this is not its only advantage over other type theories." />
+<link rel="canonical" href="http://localhost:5000/meta-cedille/2019/06/24/syntactic-metaprogramming-i.html" />
+<meta property="og:url" content="http://localhost:5000/meta-cedille/2019/06/24/syntactic-metaprogramming-i.html" />
+<meta property="og:site_name" content="Meta-cedille blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-06-24T22:35:16+02:00" />
+<script type="application/ld+json">
+{"headline":"Syntactic metaprogramming I","dateModified":"2019-06-24T22:35:16+02:00","datePublished":"2019-06-24T22:35:16+02:00","url":"http://localhost:5000/meta-cedille/2019/06/24/syntactic-metaprogramming-i.html","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:5000/meta-cedille/2019/06/24/syntactic-metaprogramming-i.html"},"description":"This is the first in a series of posts where I will explain how to use the metaprogramming features of meta-cedille. Before we start discussing any specifics, I want to give a little background on the system. Meta-cedille is of course based on cedille, a minimalistic, dependently typed programming language without a datatype system. I won’t explain why cedille is an interesting theory here, but you can for example read this post by Victor Maia, or have a look at the cedille documentation. The main reason why cedille was chosen as a host language for this metaprogramming system was because of its simple implementation and consistency proof, but this is not its only advantage over other type theories.","@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:5000/feed.xml" title="Meta-cedille blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Meta-cedille blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Syntactic metaprogramming I</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-06-24T22:35:16+02:00" itemprop="datePublished">Jun 24, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This is the first in a series of posts where I will explain how to use the metaprogramming features of <a href="https://github.com/WhatisRT/meta-cedille">meta-cedille</a>. Before we start discussing any specifics, I want to give a little background on the system. Meta-cedille is of course based on <a href="https://github.com/cedille/cedille">cedille</a>, a minimalistic, dependently typed programming language without a datatype system. I won’t explain why cedille is an interesting theory here, but you can for example read this <a href="https://medium.com/@maiavictor/towards-a-simple-theorem-prover-5005a1e66a6f">post</a> by Victor Maia, or have a look at the <a href="https://cedille.github.io/docs/about.html#about">cedille documentation</a>. The main reason why cedille was chosen as a host language for this metaprogramming system was because of its simple implementation and consistency proof, but this is not its only advantage over other type theories.</p>
+
+<p>Meta-cedille is an extension of cedille (technically, <a href="https://github.com/astump/cedille-core-spec/blob/master/spec.pdf">cedille-core</a>, implemented <a href="https://github.com/cedille/cedille/tree/master/core">here</a>), that adds full syntactic metaprogramming without breaking the consistency of the underlying type theory. This means that not only terms or other code can be read and written within the language itself, but also the syntax of the language can be fully modified by the programmer. A user of the language can specify their own <code class="highlighter-rouge">LL1</code> grammar (a special type of context-free grammar, with the restriction that any non-terminal can uniquely be assigned a parsing rule by just reading one character), that is to be used for parsing. This feature seems to have lots of potential as a substitute for built-in features, as well as for enabling features that other languages miss. For a somewhat complete list of what I believe to be possible, see <a href="https://github.com/WhatisRT/meta-cedille/wiki/Things-(potentially)-enabled-by-this-kind-of-metaprogramming">here</a>. In particular, it seems possible to implement a syntactic sugar for inductive datatypes, which is something that Victor Maia talks about in the above mentioned post. His issue with cedille-core is that defining an inductive datatype requires a lot of boilerplate code, making it difficult to read and write. Further, if a syntactic sugar for inductive datatypes was added, it would either be part of the language implementation, making it more complicated (and adding potential for breaking something), or be something that would be expanded to regular cedille-core code before distribution, making it difficult to read. With meta-cedille, a third option seems possible: adding the syntactic sugar with metaprogramming, combining the advantages of both previously mentioned approaches.</p>
+
+<p>In this first entry, we will talk about how to add a notation for natural numbers to the language. Having the ability to do this was one of the initial design goals of the language. In fact, I found it always annoying that languages like Coq or Agda didn’t have a built-in data type for natural numbers, but that they had a syntax for writing their elements built-in. Thus, the <a href="https://github.com/WhatisRT/meta-cedille/wiki/Terms">initial syntax</a> of the language consists just of the terms of cedille-core, plus some necessary extensions for metaprogramming. This syntax was built with a goal of a simple implementation, so it is very bare-bones and sometimes hard to read. But the whole point of the language is that this doesn’t matter, as everything can be changed.</p>
+
+<p>This will mostly be an introduction by example. If you want a full explanation of how to modify the grammar of the language, see <a href="https://github.com/WhatisRT/meta-cedille/wiki/Grammar">here</a>. You should have some familiarity with how parsing with a <a href="https://en.wikipedia.org/wiki/Context-free_grammar">context-free grammar</a> works.</p>
+
+<p>Let’s get started with the parsing rules. For simplicity, we’ll only do notation in base 2, but this will of course easily generalize:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$bindigit$0 := f : Bool.
+let init$bindigit$1 := t : Bool.
+</code></pre></div></div>
+<p>Note that these are definitions of values of type <code class="highlighter-rouge">Bool</code>. These two lines just define alternative names for the two inhabitants of the type. The type annotation on the right is always optional, but it gives a good additional safety check that we really have defined the right thing (it can also be used to replace an inferred type by a nicer, equivalent type). The important part happens to the left of the <code class="highlighter-rouge">:=</code> sign: the names of values <em>may</em> be used for parsing rules. Parsing rules consist of three parts, separated by <code class="highlighter-rouge">$</code> characters: first, a <em>prefix</em> (or namespace, whatever you prefer), second a <em>nonterminal symbol</em>, and third a <em>replacement</em>. The prefix is later passed to a special command that applies the changes to the grammar, and all rules with that prefix will be considered. As we want to extend the previous grammar, we have to use the prefix <code class="highlighter-rouge">init</code>. The nonterminal and replacements are fairly simple: we introduce two rules for a nonterminal <code class="highlighter-rouge">bindigit</code> (that didn’t exist before), and it can be parsed either as <code class="highlighter-rouge">0</code> or as <code class="highlighter-rouge">1</code>. Depending on which digit was parsed, this will then either return the term <code class="highlighter-rouge">f</code> or <code class="highlighter-rouge">t</code>. Next:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$binnat'$_bindigit__binnat'_ :=
+    &lt;cons Bool&gt; : Π _ : Bool Π _ : [List Bool] [List Bool].
+    -- with better syntax, this would be Bool -&gt; List Bool -&gt; List Bool
+let init$binnat'$ := &lt;nil Bool&gt; : [List Bool].
+</code></pre></div></div>
+<p>Here, we’re defining a nonterminal <code class="highlighter-rouge">binnat'</code>, that can either be parsed by first parsing a <code class="highlighter-rouge">bindigit</code> and then another <code class="highlighter-rouge">binnat'</code> (i.e. a digit and then possibly some more digits), or by parsing an empty string. Note that the square brackets denote the application of a term to a term, and the angle brackets denote erased application of terms (so if you would write <code class="highlighter-rouge">f x y</code> in Haskell, you’d have to write <code class="highlighter-rouge">[[f x] y]</code> here). If you don’t know cedille, you can just regard the two forms of application as the same thing for now. This syntax is currently being used because it gives a simple <code class="highlighter-rouge">LL1</code> grammar, but I hope to migrate to a better syntax soon.</p>
+
+<p>In this piece of code, you can also see how the parsed data is collected: parsing a <code class="highlighter-rouge">binnat'</code> will give us a list of booleans. You can also see that the parsing rules essentially dictate the type of their values (this isn’t enforced: you can put arbitrary code on the right hand side. But you will get type errors after the parsing step if you don’t assign your types consistently). If you were wondering why the nonterminal was called <code class="highlighter-rouge">binnat'</code>, here is the reason:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$binnat$_bindigit__binnat'_ :=
+    &lt;cons Bool&gt; : Π _ : Bool Π _ : [List Bool] [List Bool].
+</code></pre></div></div>
+<p>A <code class="highlighter-rouge">binnat</code> should at least contain one digit, so we added an intermediate symbol to ensure this. The final parsing rule is this:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$term$=nu=_binnat_ :=
+    λ bs : [List Bool] [[quote$square quoteBoolListToNat] [quoteListBool bs]]
+    : Π _ : [List Bool] init$term.
+</code></pre></div></div>
+<p>So, we can parse a <code class="highlighter-rouge">term</code>, by parsing <code class="highlighter-rouge">=nu=</code> and a <code class="highlighter-rouge">binnat</code> afterwards. <code class="highlighter-rouge">=nu=</code> is an escape code for the greek character ν. If you are wondering how to write parsing rules that use the <code class="highlighter-rouge">$, _</code> or <code class="highlighter-rouge">=</code> characters, you can use <code class="highlighter-rouge">=dollar=, =underscore=</code> and <code class="highlighter-rouge">=equals=</code> respectively.</p>
+
+<p>The reason why we prefix a number with this character is because meta-cedille currently has support for de-Bruijn indices, which are indicated by unprefixed numbers. This will probably be changed in some form later, but for now, we have to put up with another prefix. The more interesting part in this definition is the part to the right of the <code class="highlighter-rouge">:=</code> sign. First, note that the type shows us that this should be a function, that takes a list of booleans, and returns a <code class="highlighter-rouge">init$term</code>. This is just the type of terms - it contains only a single <code class="highlighter-rouge">$</code> character, so this isn’t used as a parsing rule. It was just convenient to name it like this, because all its constructors are parsing rules.</p>
+
+<p>The more interesting part in this rule is how it is defined. First, the function <code class="highlighter-rouge">quote$square</code> (again, not a parsing rule) represents a term constructor that applies the second term to the first one, with square brackets. Thus, if <code class="highlighter-rouge">a</code> and <code class="highlighter-rouge">b</code> are terms, <code class="highlighter-rouge">[[quote$square a] b]</code> represents the term <code class="highlighter-rouge">[a b]</code>. The term <code class="highlighter-rouge">quoteBoolListToNat</code> is a reference to the function <code class="highlighter-rouge">boolListToNat</code>, so <code class="highlighter-rouge">[[quote$square quoteBoolListToNat] x]</code> represents the term <code class="highlighter-rouge">[boolListToNat x]</code>. Finally, <code class="highlighter-rouge">quoteListBool</code> is a function that turns a list of booleans into a term, by recursively writing down the constructors of that list, and applying them properly. So, what this function will do at the end is take the list of bools you provided, and replace it by a function application of <code class="highlighter-rouge">boolListToNat</code> to whatever list you provided. The implementation of <code class="highlighter-rouge">boolListToNat</code> is more or less standard, so I’m not going to talk about it here. <code class="highlighter-rouge">quoteListBool</code> is implemented as follows:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let quoteListBool :=
+    [[&lt;&lt;inductionList Bool&gt; λ _ : [List Bool] init$term&gt; quoteNilBool]
+      λ b : Bool λ bs : [List Bool] λ rec : init$term
+        [[quote$square [[quote$square quoteConsBool] [quoteBoolFun b]]] rec]]
+    : Π _ : [List Bool] init$term.
+</code></pre></div></div>
+
+<p>This needs some more explanation: <code class="highlighter-rouge">&lt;&lt;inductionList Bool&gt; λ _ : [List Bool] init$term&gt;</code> is a function that takes as arguments a base case for induction, and an inductive step, and returns a function that turns a list of bools into a term. In case the list is the empty list, we want to write <code class="highlighter-rouge">&lt;nil Bool&gt;</code>, which is what the term <code class="highlighter-rouge">quoteNilBool</code> does. In the inductive step, the list consists of a first element and a rest, bound as <code class="highlighter-rouge">b</code> and <code class="highlighter-rouge">bs</code> respectively. We also get a term <code class="highlighter-rouge">rec</code>, which is essentially the term <code class="highlighter-rouge">[quoteListBool bs]</code> (but we cannot write this here: we cannot refer to a name in its own definition). We want to write <code class="highlighter-rouge">[[&lt;cons Bool&gt; b] bs]</code> here, which is precisely what the term after the lambdas does.</p>
+
+<p>If you are wondering why I used this function and a quoted list of bools, instead of just writing <code class="highlighter-rouge">[suc [suc ... [suc zero] ... ]]</code>, this has been done for performance reasons. The generated code needs to be typechecked afterwards, and writing it down in unary notation would give us exponential typechecking time in the length of the number, whereas this solution is linear. The current environment meta-cedille runs in is already incredibly slow, and having the number 1000 need 10 minutes of typechecking is just bad.</p>
+
+<p>After all these definitions are finished, we can apply them:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>seteval eval init stmt.
+</code></pre></div></div>
+
+<p>The second argument to <code class="highlighter-rouge">seteval</code> tells the environment to use the <code class="highlighter-rouge">init</code> prefix, which then adds our new parsing rules to the already existing ones. The third argument specifies the initial nonterminal symbol to be used by the grammar (which is something we didn’t interact with so far - we could add a new top-level statement to the language by adding a parsing rule for <code class="highlighter-rouge">stmt</code>). The first argument specifies the evaluator, which is used to execute the parsed data, and potentially modify the environment. This is just a regular function with a special result type, that can be defined by the user. I will write about these in future posts.</p>
+
+<p>You can find the full source code <a href="https://github.com/WhatisRT/meta-cedille/blob/master/test/NatSyntax.mced">here</a>, but to run it, you will need to import some other files beforehand (there is no module system yet, and redundant imports will throw errors and abort execution, as of now). You can have a look at <a href="https://github.com/WhatisRT/meta-cedille/blob/master/test/NatSyntaxTest.mced">this file</a>, which imports all the necessary files.</p>
+
+  </div><a class="u-url" href="/meta-cedille/2019/06/24/syntactic-metaprogramming-i.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Meta-cedille blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Meta-cedille blog</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/WhatisRT"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">WhatisRT</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A blog about metaprogramming and dependent type theory.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
