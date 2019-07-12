@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Syntactic metaprogramming II | Meta-cedille blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="Syntactic metaprogramming II" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This is the second in a series of posts where I am going to explain how to use the metaprogramming features of meta-cedille. If you haven’t read the previous post this post might not make much sense." />
+<meta property="og:description" content="This is the second in a series of posts where I am going to explain how to use the metaprogramming features of meta-cedille. If you haven’t read the previous post this post might not make much sense." />
+<link rel="canonical" href="http://localhost:5000/meta-cedille/2019/07/12/syntactic-metaprogramming-ii.html" />
+<meta property="og:url" content="http://localhost:5000/meta-cedille/2019/07/12/syntactic-metaprogramming-ii.html" />
+<meta property="og:site_name" content="Meta-cedille blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-07-12T00:00:00+02:00" />
+<script type="application/ld+json">
+{"url":"http://localhost:5000/meta-cedille/2019/07/12/syntactic-metaprogramming-ii.html","headline":"Syntactic metaprogramming II","dateModified":"2019-07-12T00:00:00+02:00","datePublished":"2019-07-12T00:00:00+02:00","description":"This is the second in a series of posts where I am going to explain how to use the metaprogramming features of meta-cedille. If you haven’t read the previous post this post might not make much sense.","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:5000/meta-cedille/2019/07/12/syntactic-metaprogramming-ii.html"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:5000/feed.xml" title="Meta-cedille blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Meta-cedille blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Syntactic metaprogramming II</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-07-12T00:00:00+02:00" itemprop="datePublished">Jul 12, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This is the second in a series of posts where I am going to explain how to use the metaprogramming features of <a href="https://github.com/WhatisRT/meta-cedille">meta-cedille</a>. If you haven’t read the <a href="https://whatisrt.github.io/meta-cedille/2019/06/25/syntactic-metaprogramming-i.html">previous post</a> this post might not make much sense.</p>
+
+<p>This time, I’ll be talking about a better function definition syntax, strings and parsing unrestricted grammars. The function definition syntax is an ML-like syntax. Let me give an example of what syntax we want to end up with:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>b-let identity [X : *] (x : X) : X := x.
+</code></pre></div></div>
+
+<p>The main advantage of this notation is that we can get a type annotated definition without having to repeat types. The above example will de-sugar to:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let identity := Λ X : * λ x : X x : ∀ X : * Π x : X X.
+</code></pre></div></div>
+
+<p>So let’s discuss quickly how this works. After parsing the syntax, we will have access to a list of parameters (a parameter is a triple consisting of a flag deciding whether the parameter is supposed to be erased or not, a name and a type) and a type, in a addition to the name and the term representing the body. The list of parameters will then be converted to a stack of lambdas and a stack pis/foralls, which will be prepended to the body and the type respectively. So let’s implement it.</p>
+
+<p>First, I’ll use a better syntax for function application for better readability. It is implemented <a href="https://github.com/WhatisRT/meta-cedille/blob/master/test/BetterApp.mced">here</a>, and the syntax is <code class="highlighter-rouge">γ[f x1 ... xn]</code>, where <code class="highlighter-rouge">?xk</code> refers to an erased application. In the original source this syntax isn’t used because the file that introduces it actually uses the better let definition, but we can do it here.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$param$_name__space_=colon=_space__term_ :=
+  λ n : init$name λ _ : init$space λ _ : init$space λ t : init$term
+    γ[mkPreParam n t].
+</code></pre></div></div>
+
+<p>This is the rule that parses the interior of parentheses, which should be quite straightforward. <code class="highlighter-rouge">mkPreParam</code> is the constructor for a parameter without the information whether it is erased.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$params := [List Param].
+let init$params$=lparen=_param_=rparen=_space__params_ :=
+  λ p : PreParam λ _ : init$space γ[cons ?Param γ[mkParam false p]].
+let init$params$=lsquare=_param_=rsquare=_space__params_ :=
+  λ p : PreParam λ _ : init$space γ[cons ?Param γ[mkParam true p]].
+let init$params$ := &lt;nil Param&gt;.
+</code></pre></div></div>
+
+<p>These rules are for parsing a list of parameters. This should be straightforward as well: <code class="highlighter-rouge">mkParam</code> is the constructor for a full parameter and in case we parsed it with surrounding parentheses, we pass <code class="highlighter-rouge">false</code> to <code class="highlighter-rouge">mkParam</code> for an unerased parameter, and <code class="highlighter-rouge">true</code> for surrounding square brackets. To turn this list of parameters into the corresponding lambda abstractions, we use the following functions:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let paramToLambda := λ t : init$term λ p : Param
+  γ[γ[ifthenelse ?(Π _ : init$name Π _ : init$term Π _ : init$term init$term)
+      [paramErased p]
+      quote$Lambda
+      quote$lambda]
+    [paramName p] [paramType p] t]
+  : Π _ : init$term Π _ : Param init$term.
+
+let foldWithLambdas :=
+  γ[foldl ?Param ?init$term paramToLambda]
+  : Π _ : init$params Π _ : init$term init$term.
+</code></pre></div></div>
+
+<p>First, the type of <code class="highlighter-rouge">quote$lambda</code> (and all other such abstractions) is <code class="highlighter-rouge">Π _ : init$name Π _ : init$term Π _ : init$term init$term</code>. After filling in a parameter, the type would be <code class="highlighter-rouge">Π _ : init$term init$term</code>, so we want a function <code class="highlighter-rouge">Π _ : Param Π _ : init$term init$term</code>. So this is what <code class="highlighter-rouge">paramToLambda</code> does, except that the order of arguments is swapped. <code class="highlighter-rouge">paramErased</code>, <code class="highlighter-rouge">paramName</code> and <code class="highlighter-rouge">paramType</code> are the three projections of the parameter, so <code class="highlighter-rouge">paramToLambda</code> applies <code class="highlighter-rouge">quote$lambda</code> or <code class="highlighter-rouge">quote$Lambda</code> (depending on the value of <code class="highlighter-rouge">[paramErased p]</code>) to <code class="highlighter-rouge">[paramName p]</code> and <code class="highlighter-rouge">[paramType p]</code>. Then, <code class="highlighter-rouge">foldWithLambdas</code> applies this function recursively to the list of parameters. The function <code class="highlighter-rouge">foldWithPi</code> is defined exactly the same, except that it uses <code class="highlighter-rouge">quote$forall</code> and <code class="highlighter-rouge">quote$Pi</code>. Finally, the last parsing rule is defined as (sorry for the long name):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$stmt$b=minus=let_space__name__space__params_=colon=_space__term__space_=colon==equal=_space'__term_=dot= :=
+  λ _ : init$space λ n : init$name λ _ : init$space
+  λ params : init$params λ _ : init$space λ type : init$term
+  λ _ : init$space λ _ : init$space' λ term : init$term
+    γ[quote$annotatedLet n
+      γ[foldWithLambdas params term]
+      γ[foldWithPi params type]].
+</code></pre></div></div>
+
+<p>Note that this is a parsing rule for <code class="highlighter-rouge">stmt</code>, so this is an example of how to define a new top-level statement. The function <code class="highlighter-rouge">quote$annotatedLet</code> takes three arguments, <code class="highlighter-rouge">n, t</code> and <code class="highlighter-rouge">t'</code>, and returns the quoted statement <code class="highlighter-rouge">let n := t : t'.</code>. After setting the evaluator, we can run the above example and see it in action. It would of course be nice to improve this syntax a little bit, by allowing to bind multiple names to a type in one go (as in <code class="highlighter-rouge">(a b : T)</code>). PR’s for this are welcome.</p>
+
+<p>Let’s continue with strings. Strings are of course encased in double quotes:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$term$=doublequote=_newstring_=doublequote= :=
+  quote$String : Π _ : init$string init$term.
+</code></pre></div></div>
+
+<p>We will get to the function <code class="highlighter-rouge">quote$String</code> later. The interior of the double quotes is either empty or a character followed by the same nonterminal:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$newstring$ := init$string$nil : init$string.
+let init$newstring$_stringchar__newstring_ :=
+  init$string$cons : Π _ : init$char Π _ : init$string init$string.
+</code></pre></div></div>
+
+<p>So what remains is to parse an (almost) arbitrary single character, which is done by the following syntax:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let init$stringchar$!=doublequote=! := λ c : init$char c.
+</code></pre></div></div>
+
+<p>The exclamation points encase a list of rules that match a single character, and negate these rules. After parsing the character, it is passed to the function. In this case, it matches every character except a double quote. So, after parsing a string, we get a <code class="highlighter-rouge">init$string</code>, which is essentially a list of <code class="highlighter-rouge">init$char</code>’s, and we have to transform into a <code class="highlighter-rouge">init$term</code>, which is where the above mentioned <code class="highlighter-rouge">quote$String</code> function comes into play. It is defined as follows:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>b-let quote$String (s : init$string) : init$term :=
+  γ[s ?init$term
+      λ c : init$char λ rec : init$term
+        γ[quote$square γ[quote$square quote$stringCons [quote$char c]] rec]
+      quote$stringNil].
+</code></pre></div></div>
+
+<p>The type <code class="highlighter-rouge">init$string</code> is defined with a Church encoding, so their elements are functions that pattern match on themselves. This can be seen in the type of <code class="highlighter-rouge">γ[s init$term]</code>, which, after applying some syntactic sugar is:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(init$char -&gt; init$term -&gt; init$term) -&gt; init$term -&gt; init$term
+</code></pre></div></div>
+
+<p>This means, if <code class="highlighter-rouge">s</code> is the empty string, <code class="highlighter-rouge">γ[s ?init$term f n]</code> evaluates to <code class="highlighter-rouge">n</code>, and if <code class="highlighter-rouge">s</code> is <code class="highlighter-rouge">c</code> followed by <code class="highlighter-rouge">s'</code>, it evaluates to <code class="highlighter-rouge">γ[f c γ[s' ?init$term f n]]</code>. Thus, in the case of <code class="highlighter-rouge">quote$String</code>, if we give the empty string to it, it evaluates to <code class="highlighter-rouge">quote$stringNil</code> and if it is of the form <code class="highlighter-rouge">c</code> followed by <code class="highlighter-rouge">s</code>, it evaluates to <code class="highlighter-rouge">γ[quote$square γ[quote$square quote$stringCons [quote$char c]] [quote$String s]]</code> which represents <code class="highlighter-rouge">[[stringCons c] s]</code>. The definitions of <code class="highlighter-rouge">quote$stringNil</code> and <code class="highlighter-rouge">quote$stringCons</code> are quite tedious and not repeated here.</p>
+
+<p>Note that this definition for a string syntax does not feature an escaping mechanism to let the double quote be typed within a string. This has been done mostly for the simplicity of the implementation and is left as an exercise to the reader (PR’s welcome). To parse everything except for a double quote and a backslash character, use <code class="highlighter-rouge">!=doublequote=&amp;=backslash=!</code>. A syntax for a single character would also be nice (parsing single quotes is done with just a <code class="highlighter-rouge">'</code> character instead of the escape mechanism).</p>
+
+<p>So now it should be somewhat clear how to define new notations that extend existing syntax. Defining a syntax for lists is not too difficult (see <a href="https://github.com/WhatisRT/meta-cedille/blob/master/test/ListNotation.mced">here</a>), while defining a notation for inductive datatypes is probably challenging but given a good understanding of cedille it should still be mostly straightforward.</p>
+
+<p>For the remainder of this post, I want to discuss how to modify the evaluator of the language which is a very powerful feature that can be used to run arbitrary code after the parsing step.</p>
+
+<p>First, I want to give a brief introduction into the idea of the evaluator. In the previous examples, the result of parsing always had to result in something that is of type <code class="highlighter-rouge">init$stmt</code>, which is essentially a built-in type. One of the goals of this system was that everything should be modifiable by the user, so this type should not be fixed. To do this, we should be able to replace it with another type, say <code class="highlighter-rouge">A</code>, such that elements of <code class="highlighter-rouge">A</code> can be turned into executions of the systems. This is done with the meta monad, denoted by <code class="highlighter-rouge">ω</code>, which is a monad that can run executions in the environment. It has the monadic operations <code class="highlighter-rouge">ε</code> (return/pure) and <code class="highlighter-rouge">μ</code> (bind) as well as an operation <code class="highlighter-rouge">ξ</code> that executes statements (of type <code class="highlighter-rouge">init$stmt</code>) and returns something of type <code class="highlighter-rouge">init$metaResult</code> (which is a type that captures errors and other things that the executions of statements might return), so if <code class="highlighter-rouge">t</code> is of type <code class="highlighter-rouge">init$stmt</code>, <code class="highlighter-rouge">ξ t</code> is of type <code class="highlighter-rouge">ω init$metaResult</code>. So, a function <code class="highlighter-rouge">f : A -&gt; ω B</code> is a function that can execute statements based on its input and return some value of type <code class="highlighter-rouge">B</code>, and such a function can be registered as the evaluator with the <code class="highlighter-rouge">seteval</code> statement. Then, if the parsing step returns some term <code class="highlighter-rouge">t</code> of type <code class="highlighter-rouge">A</code>, the environment will execute the value <code class="highlighter-rouge">[f t]</code>. Note that the <code class="highlighter-rouge">seteval</code> statement does not in any way change any previous definition. It just changes the evaluator that is used to evaluate statements. It is not possible to use the pointer to the current evaluator in a definition.</p>
+
+<p>The function that has been used as the evaluator up to this point is defined as follows:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> let eval := λ s : init$stmt ξ s.
+</code></pre></div></div>
+
+<p>To show off what is possible by changing the evaluator, I will demonstrate how to work around the limitations of the parser, to parse a language that is not context-free. This is just a toy example, but it generalizes to parsing arbitrary languages. The language we want to parse is the language of all strings consisting of the letters <code class="highlighter-rouge">a, b</code> and <code class="highlighter-rouge">c</code>, such that all letters appear equally often. This language is known to be context-sensitive, so in particular not a <code class="highlighter-rouge">LL1</code> grammar that the parser can handle. To do this, we use a variation of the parsing rules for strings:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>let csgdemo$char$a := quote$a : init$char.
+let csgdemo$char$b := quote$b : init$char.
+let csgdemo$char$c := quote$c : init$char.
+
+let csgdemo$str := [List init$char].
+let csgdemo$str$_char__str_ := &lt;cons init$char&gt;.
+let csgdemo$str$ := &lt;nil init$char&gt;.
+</code></pre></div></div>
+
+<p>So, <code class="highlighter-rouge">str</code> is a nonterminal that parses only strings of the letters <code class="highlighter-rouge">a, b</code> and <code class="highlighter-rouge">c</code> and returns that data as a string. Next, we define the evaluator:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>b-let csgdemoeval (l : [List init$char]) : ω Nat :=
+  γ[ifthenelse ?(ω Nat) [abcEqual l]
+    ε γ[countOccurencesChar quote$a l]
+    μ [eval triggerError] λ _ : init$metaResult ε zero].
+</code></pre></div></div>
+
+<p>Just to make it clear how <code class="highlighter-rouge">ε</code> and <code class="highlighter-rouge">μ</code> work, in a Haskell-like syntax this would read:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>csgdemoeval l =
+  if abcEqual l
+    then return (countOccurencesChar quote$a l)
+    else (eval triggerError) &gt;&gt; return zero
+</code></pre></div></div>
+
+<p>The function <code class="highlighter-rouge">abcEqual</code> takes a string and returns <code class="highlighter-rouge">true</code> iff the characters <code class="highlighter-rouge">a, b</code> and <code class="highlighter-rouge">c</code> appear equally as often. <code class="highlighter-rouge">countOccurencesChar</code> takes a character and a string, and returns how often that character appears in that string. <code class="highlighter-rouge">triggerError</code> is of type <code class="highlighter-rouge">init$stmt</code> and always triggers an error when executed (it represents <code class="highlighter-rouge">let dummy := dummy.</code>, which will either complain that the name <code class="highlighter-rouge">dummy</code> is undefined, or that the name <code class="highlighter-rouge">dummy</code> is defined). So, <code class="highlighter-rouge">csgdemoeval</code> will take the string, and if it has an equal count of the letters it will do nothing and return how often each letter appeared. Otherwise, it will trigger an error and return the number <code class="highlighter-rouge">0</code> afterwards. Finally, we set the evaluator:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>seteval csgdemoeval csgdemo str.
+</code></pre></div></div>
+
+<p>This uses <code class="highlighter-rouge">csgdemoeval</code> as the evaluator, <code class="highlighter-rouge">str</code> as the starting nonterminal and <code class="highlighter-rouge">csgdemo</code> as the namespace.</p>
+
+<p>This is a very simple example of course, but it shows that it is possible to run arbitrary code to accept or reject parse results. This means that one could write a parser library that can handle stronger grammars than the built-in parser and use that library to write parsing rules. At the same time, this demonstrates how previous definitions can be hidden: after the <code class="highlighter-rouge">seteval</code> statement, there is no way to execute another <code class="highlighter-rouge">seteval</code> command, so it is impossible to go back.</p>
+
+  </div><a class="u-url" href="/meta-cedille/2019/07/12/syntactic-metaprogramming-ii.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Meta-cedille blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Meta-cedille blog</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/WhatisRT"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">WhatisRT</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>A blog about metaprogramming and dependent type theory.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
